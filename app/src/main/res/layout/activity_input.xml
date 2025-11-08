@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="#FFFFFF">
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enter Details"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textColor="#000000"
+        android:layout_marginBottom="24dp" />
+
+    <!-- First Name Field -->
+    <EditText
+        android:id="@+id/etName1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter First Name"
+        android:inputType="textPersonName"
+        android:padding="12dp"
+        android:background="@android:drawable/edit_text"
+        android:textColor="#000000"
+        android:textColorHint="#000000"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Second Name Field -->
+    <EditText
+        android:id="@+id/etName2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Second Name"
+        android:inputType="textPersonName"
+        android:padding="12dp"
+        android:background="@android:drawable/edit_text"
+        android:textColor="#000000"
+        android:textColorHint="#000000"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Start Scan Button -->
+    <Button
+        android:id="@+id/btnStartScan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start Scan"
+        android:textSize="18sp"
+        android:padding="12dp"
+        android:backgroundTint="#2196F3"
+        android:textColor="#000000" />
+</LinearLayout>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- ZXing camera preview -->
+    <com.journeyapps.barcodescanner.DecoratedBarcodeView
+        android:id="@+id/barcode_scanner"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Optional text hint -->
+    <TextView
+        android:id="@+id/tv_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Align the barcode inside the box to scan"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:layout_marginTop="24dp"
+        android:textSize="16sp" />
+
+</FrameLayout>
