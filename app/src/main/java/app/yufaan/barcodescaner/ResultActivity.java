@@ -1,122 +1,107 @@
 package app.yufaan.barcodescaner;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.net.Uri;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
+import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
-import java.io.IOException;
-import java.io.OutputStream;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-public class ResultActivity extends AppCompatActivity {
+public class ScannerActivity extends AppCompatActivity {
 
-    private static final int CREATE_FILE_REQUEST_CODE = 1001;
+    private EditText etScanInput;
+    private TextView tvLiveResult;
+    private Button btnShowResult;
 
-    TextView tvResult;
-    Button btnSaveText;
-    ArrayList<String> codes;
+    private final Map<String, Integer> scannedData = new HashMap<>();
 
-    private String textToSave;
-    private String tempFileName;
+    private String name1, name2;
+
+    private ToneGenerator toneGenerator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_result);
+        setContentView(R.layout.activity_scanner);
 
-        tvResult = findViewById(R.id.tvResult);
-        btnSaveText = findViewById(R.id.btnSavePdf);
+        etScanInput = findViewById(R.id.etScanInput);
+        tvLiveResult = findViewById(R.id.tvLiveResult);
+        btnShowResult = findViewById(R.id.btnShowResult);
 
-        // ✅ Get data passed from previous activity
-        codes = getIntent().getStringArrayListExtra("codes");
+        name1 = getIntent().getStringExtra("name1");
+        name2 = getIntent().getStringExtra("name2");
 
-        // ✅ Build result text
+        toneGenerator = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+
+        // Auto scan from CRUISE2 device (HID)
+        etScanInput.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String code = s.toString().trim();
+                if (code.length() > 0) {
+                    processScan(code);
+                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 150);
+                    etScanInput.setText(""); // Clear after scan
+                }
+            }
+        });
+
+        btnShowResult.setOnClickListener(v -> openResultScreen());
+
+        etScanInput.requestFocus();
+    }
+
+    private void processScan(String code) {
+        if (scannedData.containsKey(code)) {
+            scannedData.put(code, scannedData.get(code) + 1);
+        } else {
+            scannedData.put(code, 1);
+        }
+        updateLiveResult();
+    }
+
+    private void updateLiveResult() {
         StringBuilder sb = new StringBuilder();
         sb.append("NAME1, NAME2, BARCODE, QTY\n");
         sb.append("----------------------------------\n");
 
-        if (codes != null && !codes.isEmpty()) {
-            for (String line : codes) {
-                sb.append(line).append("\n");
-            }
-        } else {
-            sb.append("No barcode data scanned.");
+        for (Map.Entry<String, Integer> entry : scannedData.entrySet()) {
+            sb.append(name1).append(", ")
+                    .append(name2).append(", ")
+                    .append(entry.getKey()).append(", ")
+                    .append(entry.getValue()).append("\n");
         }
 
-        tvResult.setText(sb.toString());
-
-        // ✅ Handle Save Button
-        btnSaveText.setOnClickListener(v -> showFileNameDialog());
+        tvLiveResult.setText(sb.toString());
     }
 
-    // Step 1: Ask user for file name
-    private void showFileNameDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Enter file name");
+    private void openResultScreen() {
+        ArrayList<String> resultList = new ArrayList<>();
 
-        final EditText input = new EditText(this);
-        input.setHint("e.g. MyBarcodes");
-        input.setText("Barcode_Result_" + System.currentTimeMillis());
-        input.setPadding(50, 40, 50, 10);
+        for (Map.Entry<String, Integer> entry : scannedData.entrySet()) {
+            String line = name1 + ", " + name2 + ", " + entry.getKey() + ", " + entry.getValue();
+            resultList.add(line);
+        }
 
-        builder.setView(input);
-
-        builder.setPositiveButton("Next", (dialog, which) -> {
-            String fileName = input.getText().toString().trim();
-            if (!fileName.endsWith(".txt")) {
-                fileName = fileName + ".txt";
-            }
-            tempFileName = fileName;
-            textToSave = tvResult.getText().toString();
-            createFile(fileName);
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-        builder.show();
+        Intent i = new Intent(ScannerActivity.this, ResultActivity.class);
+        i.putStringArrayListExtra("codes", resultList);
+        startActivity(i);
     }
 
-    // Step 2: Let user choose save location
-    private void createFile(String fileName) {
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_TITLE, fileName);
-        startActivityForResult(intent, CREATE_FILE_REQUEST_CODE);
-    }
-
-    // Step 3: Save text to chosen file
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == CREATE_FILE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            if (data != null && data.getData() != null) {
-                Uri uri = data.getData();
-                saveTextToUri(uri, textToSave);
-            }
-        }
-    }
-
-    private void saveTextToUri(Uri uri, String text) {
-        try (OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
-            if (outputStream != null) {
-                outputStream.write(text.getBytes());
-                outputStream.flush();
-                Toast.makeText(this, "✅ File saved successfully:\n" + tempFileName, Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(this, "❌ Failed to open file output stream.", Toast.LENGTH_SHORT).show();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error saving file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+        if (toneGenerator != null) toneGenerator.release();
     }
 }
